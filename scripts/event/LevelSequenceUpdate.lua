@@ -19,8 +19,7 @@ local function createLevelGrid(levelDeck)
       exists = true,
       prereq = {},
       original = i,
-      placed = false,
-      count = math.huge
+      placed = false
     }
   end
 
@@ -91,51 +90,119 @@ local function getZoneOrdering(levels)
   -- TODO code for custom orders
 end
 
-local function shuffleLevels(levelDeck, levels, randomState)
-  -- Create a shuffled deck to draw from
-  RNG.shuffle(levelDeck, randomState)
+local function canBePlaced(levels, draw)
+  local info = levels[draw.depth][draw.floor]
+
+  for i, v in ipairs(info.prereq) do
+    -- print("Prerequisite: " .. v.depth .. "-" .. v.floor)
+    if not levels[v.depth][v.floor].placed then
+      -- print("Not satisfied.")
+      return false
+    else
+      -- print("Satisfied.")
+    end
+  end
+
+  return true
+end
+
+-- returns main deck with sub-deck levels removed
+-- followed by sub-deck
+local function splitDecks(inputDeck, draw)
+  local levelDeck = Utilities.fastCopy(inputDeck)
+
+  local clusterSetting = SDSettings.get("ordering.clustering")
+
+  if clusterSetting == SDEnum.Clustering.NONE then return levelDeck, {} end
+
+  -- print("Creating a sub-deck...")
+
+  local clusterKey
+  if clusterSetting == SDEnum.Clustering.ZONE then
+    clusterKey = "depth"
+  elseif clusterSetting == SDEnum.Clustering.LEVEL then
+    clusterKey = "floor"
+  end
+
+  local clusterValue = draw[clusterKey]
+
+  local i = 1
+  local subDeck = {}
+  local mainDeck = {}
+
+  while #levelDeck > 0 do
+    local card = table.remove(levelDeck, 1)
+
+    if card[clusterKey] == clusterValue then
+      table.insert(subDeck, card)
+      -- print("Added " .. card.depth .. "-" .. card.floor .. " to sub-deck.")
+    else
+      table.insert(mainDeck, card)
+      -- print("Skipped " ..
+      --   card.depth .. "-" .. card.floor .. " because " .. clusterKey .. " was not " .. clusterValue .. ".")
+    end
+  end
+
+  return mainDeck, subDeck
+end
+
+local function shuffleLevels(inputDeck, levels, randomState)
+  local levelDeck = Utilities.fastCopy(inputDeck)
 
   local levelSequence = {}
 
-  while #levelDeck > 0 do
-    local draw = table.remove(levelDeck, 1)
+  local subDeck = {}
 
-    local canBePlaced = true
+  while #levelDeck > 0 or #subDeck > 0 do
+    -- Pick a deck
+    -- (it's always the sub-deck if that's not empty)
+    local activeDeck = levelDeck
+    if #subDeck > 0 then activeDeck = subDeck end
 
-    local info = levels[draw.depth][draw.floor]
+    -- Shuffle that deck
+    RNG.shuffle(activeDeck, randomState)
 
-    if #levelDeck == info.count then
-      -- we've done a whole loop without placing anything
-      -- so just place this one and move on
-      goto justPlace
-    end
+    -- Check the cards in order
+    local draw
+    local index
 
-    info.count = #levelDeck
+    -- We'll place either the first one that can be placed,
+    -- or the last if all of them fail the checks.
+    for i = 1, #activeDeck do
+      index = i
+      draw = activeDeck[i]
 
-    -- Check that all prerequisite levels have been placed first
-    for i, v in ipairs(info.prereq) do
-      if not levels[v.depth][v.floor].placed then
-        canBePlaced = false
+      -- print("Attempting to place " .. draw.depth .. "-" .. draw.floor)
+
+      if canBePlaced(levels, draw) then
         break
+      end
+
+      if i == #activeDeck then
+        -- print("All levels unplaceable. Initiating fallback (last drawn level).")
       end
     end
 
-    ::justPlace::
-    -- If placeable, place
-    if canBePlaced then
-      levelSequence[#levelSequence + 1] = draw
-      info.placed = true
-    else
-      levelDeck[#levelDeck + 1] = draw
-    end
+    levelSequence[#levelSequence + 1] = draw
 
-    ::continueLevelDeck::
+    levels[draw.depth][draw.floor].placed = true
+
+    -- print("Placed level " .. draw.depth .. "-" .. draw.floor)
+
+    if #subDeck == 0 then
+      table.remove(activeDeck, index)
+      levelDeck, subDeck = splitDecks(levelDeck, draw)
+    else
+      table.remove(activeDeck, index)
+    end
   end
 
   return levelSequence
 end
 
 Event.levelSequenceUpdate.add("randomize", { order = "shuffle", sequence = 0 }, function(ev)
+  -- print("Begin level shuffling")
+
   local mode = GameSession.getCurrentModeID()
   if not (mode == "AllZones" or mode == "AllZonesSeeded" or mode == "SingleZone" or mode == "CustomDungeon") then return end
 
@@ -149,4 +216,9 @@ Event.levelSequenceUpdate.add("randomize", { order = "shuffle", sequence = 0 }, 
   getZoneOrdering(levels)
 
   ev.sequence = shuffleLevels(levelDeck, levels, randomState)
+
+  -- print("Printing new level sequence...")
+  -- for i, v in ipairs(ev.sequence) do
+  --   print(v.depth .. "-" .. v.floor)
+  -- end
 end)

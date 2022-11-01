@@ -1,23 +1,20 @@
 {
 	"namespace": "SpatialDistortions",
 	"displayName": "Spatial Distortions",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"synchronyVersion": "3.2.0",
 	"description": "Randomizes the order of floors in a run!",
 	"author": "Nixill",
-	"dependencies": {
-		"PowerSettings_io_2237104": "2.2.1"
-	},
-	"api": {
-		"scriptPath": "scripts"
-	},
+	"dependencies": {"PowerSettings_io_2237104":"2.2.1"},
+	"api": {"scriptPath":"scripts"},
 	"icon": "SpatialDistortionsIcon.png",
 	"banner": "SpatialDistortionsBanner.png",
 	"tags": [],
 	"name": "SpatialDistortions_io_2394154",
-	"homepageURL": "https://mod.io/g/crypt/m/spatialdistortions",
+	"changelog": "v0.0.2 adds ordering and clustering",
+	"homepageURL": "https://mod.io/g/crypt/m/SpatialDistortions",
 	"modioID": "2394154",
 	"modioUserID": 12939888,
-	"pendingVersion": "0.0.1",
+	"pendingVersion": "0.0.2",
 	"visibility": 2
 }

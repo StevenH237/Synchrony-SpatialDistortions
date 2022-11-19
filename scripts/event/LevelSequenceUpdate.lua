@@ -6,6 +6,65 @@ local Utilities   = require "system.utils.Utilities"
 local SDEnum     = require "SpatialDistortions.Enum"
 local SDSettings = require "SpatialDistortions.Settings"
 
+local function shouldSelectOneFinalBoss()
+  if SDSettings.get("singleBoss") then return true end
+  if SDSettings.get("zone") ~= SDEnum.Order.RANDOM then return true end
+  if SDSettings.get("clustering") == SDEnum.Clustering.LEVEL then return true end
+  if SDSettings.get("clustering") == SDEnum.Clustering.ZONE and SDSettings.get("alignment") then return true end
+
+  return false
+end
+
+local function selectOneFinalBoss(levelDeck, channel)
+  -- This assumes (and breaks if wrong):
+  -- • There are at least two depths.
+  -- • All depths except the final are consistent in length.
+  -- • The final depth is longer than the rest.
+  -- • Floors in each depth are consecutive from 1 to n.
+
+  -- Get the length and last floor of the dungeon
+  local length = #levelDeck
+  local last = levelDeck[#levelDeck]
+
+  -- Get the length of the final zone
+  local floorsInFinal = last.floor
+
+  -- Get the length of the semifinal zone
+  local semifinal = levelDeck[#levelDeck - floorsInFinal]
+  local floorsInSemifinal = semifinal.floor
+
+  -- Determine the last guaranteed level
+  local lastGuaranteed = length - (floorsInFinal - floorsInSemifinal + 1)
+  local lengthInQuestion = length - lastGuaranteed
+
+  -- Pick one of the levels in question
+  local whichLevel = RNG.int(lengthInQuestion, channel) + 1
+
+  -- Now make that the chosen level
+  levelDeck[lastGuaranteed + 1] = levelDeck[lastGuaranteed + whichLevel]
+  lastGuaranteed = lastGuaranteed + 1
+
+  -- Remove the other levels
+  while #levelDeck > lastGuaranteed do
+    table.remove(levelDeck)
+  end
+
+  -- And while we're at it we should update the number
+  levelDeck[lastGuaranteed].floor = floorsInSemifinal
+end
+
+local function getBossAlignment(levelDeck)
+  if not SDSettings.get("alignment") then return {} end
+
+  local out = {}
+
+  for i, v in ipairs(levelDeck) do
+    out[i] = v.boss ~= nil
+  end
+
+  return out
+end
+
 local function createLevelGrid(levelDeck)
   local levels = {}
 
@@ -27,7 +86,7 @@ local function createLevelGrid(levelDeck)
 end
 
 local function getFloorOrdering(levels)
-  local order = SDSettings.get("ordering.floor")
+  local order = SDSettings.get("floor")
 
   if order == SDEnum.Order.RANDOM then return end
 
@@ -49,7 +108,7 @@ local function getFloorOrdering(levels)
 end
 
 local function getZoneOrdering(levels)
-  local order = SDSettings.get("ordering.zone")
+  local order = SDSettings.get("zone")
 
   if order == SDEnum.Order.RANDOM then return end
 
@@ -68,30 +127,19 @@ local function getZoneOrdering(levels)
         end
       end
     end
-
-    -- This little bit makes 5-5 (or 4-5 in non-AMP) always succeed 5-4
-    if not isReverse then
-      local lastZone = levels[#levels]
-      local lastFloor = lastZone[#lastZone]
-
-      if lastFloor.floor >= 5 and #(lastFloor.prereq) == 0 then
-        lastFloor.prereq = { { depth = lastFloor.depth, floor = lastFloor.floor - 1 } }
-      end
-    else
-      local lastZone = levels[#levels]
-      local penultimateFloor = lastZone[#lastZone - 1]
-
-      if penultimateFloor.floor >= 4 and #(penultimateFloor.prereq) == 0 then
-        penultimateFloor.prereq = { { depth = penultimateFloor.depth, floor = penultimateFloor.floor + 1 } }
-      end
-    end
   end
 
   -- TODO code for custom orders
 end
 
-local function canBePlaced(levels, draw)
+local function canBePlaced(levels, draw, alignToBoss)
   local info = levels[draw.depth][draw.floor]
+
+  if alignToBoss ~= nil then
+    if alignToBoss ~= (draw.boss ~= nil) then
+      return false
+    end
+  end
 
   for i, v in ipairs(info.prereq) do
     -- print("Prerequisite: " .. v.depth .. "-" .. v.floor)
@@ -111,7 +159,7 @@ end
 local function splitDecks(inputDeck, draw)
   local levelDeck = Utilities.fastCopy(inputDeck)
 
-  local clusterSetting = SDSettings.get("ordering.clustering")
+  local clusterSetting = SDSettings.get("clustering")
 
   if clusterSetting == SDEnum.Clustering.NONE then return levelDeck, {} end
 
@@ -146,7 +194,7 @@ local function splitDecks(inputDeck, draw)
   return mainDeck, subDeck
 end
 
-local function shuffleLevels(inputDeck, levels, randomState)
+local function shuffleLevels(inputDeck, levels, randomState, alignment)
   local levelDeck = Utilities.fastCopy(inputDeck)
 
   local levelSequence = {}
@@ -166,20 +214,33 @@ local function shuffleLevels(inputDeck, levels, randomState)
     local draw
     local index
 
+    -- This will check alignments
+    local alignedIndex
+    local alignedDraw
+    local alignToBoss = table.remove(alignment, 1)
+
     -- We'll place either the first one that can be placed,
     -- or the last if all of them fail the checks.
     for i = 1, #activeDeck do
       index = i
       draw = activeDeck[i]
 
-      -- print("Attempting to place " .. draw.depth .. "-" .. draw.floor)
+      if alignToBoss == (draw.boss ~= nil) then
+        alignedIndex = i
+        alignedDraw = draw
+      end
 
-      if canBePlaced(levels, draw) then
+      -- print("Attempting to place " .. draw.depth .. "-" .. draw.floor)
+      if canBePlaced(levels, draw, alignToBoss) then
         break
       end
 
       if i == #activeDeck then
         -- print("All levels unplaceable. Initiating fallback (last drawn level).")
+        if alignedDraw then
+          index = alignedIndex
+          draw = alignedDraw
+        end
       end
     end
 
@@ -210,12 +271,20 @@ Event.levelSequenceUpdate.add("randomize", { order = "shuffle", sequence = 0 }, 
   local levelDeck = Utilities.fastCopy(ev.sequence)
 
   -- I'm gonna spur these off into subroutines just for organization
+
+  -- Should we rectangularize?
+  if shouldSelectOneFinalBoss() then
+    selectOneFinalBoss(levelDeck, randomState)
+  end
+
+  local bossAlignment = getBossAlignment(levelDeck)
+
   local levels = createLevelGrid(levelDeck)
 
   getFloorOrdering(levels)
   getZoneOrdering(levels)
 
-  ev.sequence = shuffleLevels(levelDeck, levels, randomState)
+  ev.sequence = shuffleLevels(levelDeck, levels, randomState, bossAlignment)
 
   -- print("Printing new level sequence...")
   -- for i, v in ipairs(ev.sequence) do

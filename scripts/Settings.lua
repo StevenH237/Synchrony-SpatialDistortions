@@ -57,19 +57,10 @@ end
 
 PowerSettings.autoRegister();
 
-PowerSettings.group {
-  name = "Ordering settings",
-  desc = "Settings that control how SpatialDistortions orders floors",
-  id = "ordering",
-  order = 1
-}
-
---#region Ordering settings
-
 PowerSettings.shared.enum {
   name = "Floor order",
   desc = "What order should the floors of a single zone be in?",
-  id = "ordering.floor",
+  id = "floor",
   order = 1,
   enum = SDEnum.Order,
   default = SDEnum.Order.RANDOM
@@ -78,7 +69,7 @@ PowerSettings.shared.enum {
 PowerSettings.shared.enum {
   name = "Zone order",
   desc = "What order should the zones of each level be in?",
-  id = "ordering.zone",
+  id = "zone",
   order = 2,
   enum = SDEnum.Order,
   default = SDEnum.Order.RANDOM,
@@ -88,9 +79,25 @@ PowerSettings.shared.enum {
 PowerSettings.shared.enum {
   name = "Clustering",
   desc = "Should all floors of a zone (or all zones of a floor) be together?",
-  id = "ordering.clustering",
+  id = "clustering",
   order = 3,
   enum = SDEnum.Clustering
+}
+
+PowerSettings.shared.bool {
+  name = "Preserve boss alignment",
+  desc = "Should bosses be kept in the same positions in a shuffle?",
+  id = "alignment",
+  order = 4,
+  default = false
+}
+
+PowerSettings.shared.bool {
+  name = "Force single final boss",
+  desc = "If enabled, there can only be one final boss. This may be enabled automatically by other settings.",
+  id = "singleBoss",
+  order = 5,
+  default = false
 }
 
 --#endregion Ordering settings

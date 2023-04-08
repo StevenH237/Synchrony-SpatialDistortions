@@ -2,7 +2,7 @@
 The `levelDeck` list is a single ordered list that contains level objects, which have the following parameters:
 
 * `boss`: Which boss is on the floor, if applicable
-* `depth`: The depth of the floor, usually matches zone except for Aria or modded characters; controls miniboss strength.
+* `depth`: The depth of the floor, usually matches zone except for Aria or modded characters; controls bossfight strength.
 * `floor`: The floor within a zone.
 * `type`: The level generator used for the level.
 * `zone`: The environment used for the level.

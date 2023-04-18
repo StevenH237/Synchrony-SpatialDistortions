@@ -1,4 +1,6 @@
-local Enum = require "system.utils.Enum"
+local Enum              = require "system.utils.Enum"
+local SettingsStorage   = require "necro.config.SettingsStorage"
+local TextLabelRenderer = require "necro.render.level.TextLabelRenderer"
 
 local Text = require "SpatialDistortions.i18n.Text"
 
@@ -30,6 +32,16 @@ module.Clustering = Enum.sequence {
   NONE = entry(0, Text.Clustering.None),
   ZONE = entry(1, Text.Clustering.Zone),
   LEVEL = entry(2, Text.Clustering.Level)
+}
+
+module.Ext = {
+  VisibilityOption = {
+    FINAL_FLOOR = TextLabelRenderer.VisibilityOption.extend("FINAL_FLOOR", Enum.data {
+      func = function()
+        return SettingsStorage.get("mod.SpatialDistortions.finalFloorText")
+      end
+    })
+  }
 }
 
 --#endregion Values

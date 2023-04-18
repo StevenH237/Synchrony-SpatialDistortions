@@ -55,7 +55,11 @@ end
 -- SETTINGS --
 --------------
 
-PowerSettings.autoRegister();
+
+PowerSettings.autoRegister()
+
+--#region Shared settings
+--#region Ordering settings
 
 PowerSettings.shared.enum {
   name = "Floor order",
@@ -101,6 +105,17 @@ PowerSettings.shared.bool {
 }
 
 --#endregion Ordering settings
+--#endregion Shared Settings
+
+--#region User Settings
+PowerSettings.user.bool {
+  name = "Final floor warning text",
+  desc = "Should a warning label appear on the final floor?",
+  id = "finalFloorText",
+  order = 1,
+  default = true
+}
+--#endregion User Settings
 --#endregion Settings
 
 return { get = function(node)

@@ -1,7 +1,7 @@
 {
 	"namespace": "SpatialDistortions",
 	"displayName": "Spatial Distortions",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"synchronyVersion": "3.2.0",
 	"description": "Randomizes the order of floors in a run! (Beta!)",
 	"author": "Nixill",
@@ -11,10 +11,10 @@
 	"banner": "SpatialDistortionsBanner.png",
 	"tags": [],
 	"name": "SpatialDistortions_io_2394154",
-	"changelog": "v0.0.3 adds alignment and single final boss mode, and is the initial public beta!",
-	"homepageURL": "https://mod.io/g/crypt/m/SpatialDistortions",
+	"changelog": "",
+	"homepageURL": "https://mod.io/g/crypt/m/spatialdistortions",
 	"modioID": "2394154",
 	"modioUserID": 12939888,
-	"pendingVersion": "0.0.3",
+	"pendingVersion": "0.0.5",
 	"visibility": 0
 }

@@ -3,6 +3,8 @@ local Entities     = require "system.game.Entities"
 local Event        = require "necro.event.Event"
 local Object       = require "necro.game.object.Object"
 
+local Text = require "SpatialDistortions.i18n.Text"
+
 Event.gameStateLevel.add("updateLabels", { order = "introText", sequence = 1 }, function(ev)
   if CurrentLevel.isSafe() then return end
 
@@ -17,7 +19,7 @@ Event.gameStateLevel.add("updateLabels", { order = "introText", sequence = 1 }, 
     Object.spawn("LabelFadingIntroductory", 0, -1, {
       worldLabel = {
         offsetY = 3,
-        text = "Spatial Distortions!"
+        text = Text.InGame.First.Above
       },
       worldLabelFade = {
         maxDistance = 10
@@ -28,7 +30,7 @@ Event.gameStateLevel.add("updateLabels", { order = "introText", sequence = 1 }, 
       worldLabel = {
         alignY = 0,
         offsetY = 11,
-        text = "Floors occur in a\nrandomized order!"
+        text = Text.InGame.First.Below
       },
       worldLabelFade = {
         maxDistance = 10
@@ -38,16 +40,16 @@ Event.gameStateLevel.add("updateLabels", { order = "introText", sequence = 1 }, 
     Object.spawn("SpatialDistortions_FinalFloorLabel", 0, -1, {
       worldLabel = {
         offsetY = 3,
-        text = "Final floor!"
+        text = Text.InGame.Last.Above
       },
       worldLabelFade = {
         maxDistance = 10
       }
     })
 
-    local bottomText = "Complete this floor\nto win this loop!"
+    local bottomText = Text.InGame.Last.BelowLoop
     if CurrentLevel.isRunFinal() then
-      bottomText = "Complete this floor\nto win the run!"
+      bottomText = Text.InGame.Last.BelowRun
     end
 
     Object.spawn("SpatialDistortions_FinalFloorLabel", 0, 0, {

@@ -1,11 +1,11 @@
 {
 	"namespace": "SpatialDistortions",
 	"displayName": "Spatial Distortions",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"synchronyVersion": "3.2.0",
 	"description": "Randomizes the order of floors in a run! (Beta!)",
 	"author": "Nixill",
-	"dependencies": {"PowerSettings_io_2237104":"2.2.1"},
+	"dependencies": {"PowerSettings_io_2237104":true},
 	"api": {"scriptPath":"scripts"},
 	"icon": "SpatialDistortionsIcon.png",
 	"banner": "SpatialDistortionsBanner.png",
